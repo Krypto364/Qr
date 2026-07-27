@@ -175,7 +175,8 @@
   /* ---- 2: yes/no ---- */
   .bears{ font-size:54px; margin:6px 0 22px; }
   .choice-row{ display:flex; gap:16px; margin-top:26px; position:relative; height:50px; align-items:center; justify-content:center; width:100%; }
-  #noBtn{ position:relative; }
+  #noBtn{ position:relative; transition:left .22s ease, top .22s ease; }
+  #noBtn.roaming{ position:fixed; margin:0; z-index:30; }
 
   /* ---- 3: candle ---- */
   .candle-wrap{ display:flex; flex-direction:column; align-items:center; margin:14px 0 10px; }
@@ -444,20 +445,37 @@ const yesBtn = document.getElementById('yesBtn');
 const noBtn = document.getElementById('noBtn');
 const choiceRow = document.querySelector('.choice-row');
 yesBtn.addEventListener('click', next);
+
+// "Not yet" is a bit that never actually resolves — it always dodges,
+// on every kind of input, and no click on it ever advances the screen.
+// Only "Yes" does. The button roams anywhere inside the card itself
+// (not just near where it started) so it can't be cornered.
 let dodges = 0;
+const dodgeLines = ["Not yet","Nope 😅","Try again 😏","Can't catch me","So close!","Almost 👀","Okay okay 🥺","Please? 🥹"];
+const s2Screen = document.getElementById('s2');
+
 function dodge(e){
-  e.preventDefault();
+  if(e){ e.preventDefault(); e.stopPropagation(); }
   dodges++;
-  const bounds = choiceRow.getBoundingClientRect();
-  const maxX = bounds.width/2 - 50;
-  const maxY = 60;
-  const x = (Math.random()*2-1)*maxX;
-  const y = (Math.random()*2-1)*maxY;
-  noBtn.style.transform = `translate(${x}px, ${y}px)`;
-  if(dodges > 3){ noBtn.textContent = "Okay okay 🥺"; }
+  if(!noBtn.classList.contains('roaming')){
+    noBtn.classList.add('roaming');
+  }
+  const stageBounds = s2Screen.getBoundingClientRect();
+  const btnBounds = noBtn.getBoundingClientRect();
+  const pad = 16;
+  const usableW = Math.max(0, stageBounds.width - btnBounds.width - pad*2);
+  const usableH = Math.max(0, stageBounds.height - btnBounds.height - pad*2);
+  const left = stageBounds.left + pad + Math.random()*usableW;
+  const top = stageBounds.top + pad + Math.random()*usableH;
+  noBtn.style.left = left+'px';
+  noBtn.style.top = top+'px';
+  noBtn.textContent = dodgeLines[Math.min(dodges, dodgeLines.length-1)];
 }
-noBtn.addEventListener('pointerenter', dodge);
-noBtn.addEventListener('pointerdown', dodge);
+// cover mouse hover, mouse/touch press, and any click that somehow
+// still lands — every one of these repositions instead of doing anything
+['pointerenter','pointerdown','touchstart','click','focus'].forEach(evt=>{
+  noBtn.addEventListener(evt, dodge, {passive:false});
+});
 
 /* ---------- 3: candle ---------- */
 const flame = document.getElementById('flame');
@@ -477,21 +495,57 @@ async function tryMic(){
   try{
     const stream = await navigator.mediaDevices.getUserMedia({audio:true});
     const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    if(ctx.state === 'suspended') await ctx.resume();
     const source = ctx.createMediaStreamSource(stream);
     const analyser = ctx.createAnalyser();
-    analyser.fftSize = 512;
+    analyser.fftSize = 1024;
+    analyser.smoothingTimeConstant = 0.15;
     source.connect(analyser);
-    const data = new Uint8Array(analyser.frequencyBinCount);
-    micStatus.textContent = "🎤 go ahead — blow!";
-    let loudFrames = 0;
-    (function poll(){
+    const data = new Uint8Array(analyser.fftSize);
+
+    // Blowing into a mic produces a strong, broadband, low-frequency
+    // rumble that shows up clearly as time-domain RMS amplitude —
+    // much more reliable to detect than average frequency energy,
+    // which false-triggers on any ambient noise or talking.
+    function getRMS(){
+      analyser.getByteTimeDomainData(data);
+      let sumSquares = 0;
+      for(let i=0;i<data.length;i++){
+        const v = (data[i]-128)/128;
+        sumSquares += v*v;
+      }
+      return Math.sqrt(sumSquares/data.length); // 0..1
+    }
+
+    micStatus.textContent = "🎤 hold on, calibrating…";
+    let baseline = 0;
+    const calibStart = performance.now();
+
+    (function calibrate(){
       if(candleOut){ stream.getTracks().forEach(t=>t.stop()); ctx.close(); return; }
-      analyser.getByteFrequencyData(data);
-      const avg = data.reduce((a,b)=>a+b,0)/data.length;
-      if(avg > 28){ loudFrames++; } else { loudFrames = Math.max(0, loudFrames-1); }
-      if(loudFrames > 4){ extinguish(); stream.getTracks().forEach(t=>t.stop()); ctx.close(); return; }
-      requestAnimationFrame(poll);
+      baseline = Math.max(baseline, getRMS());
+      if(performance.now() - calibStart < 500){
+        requestAnimationFrame(calibrate);
+      } else {
+        micStatus.textContent = "🎤 go ahead — blow!";
+        startListening();
+      }
     })();
+
+    function startListening(){
+      // threshold sits comfortably above whatever the room's ambient
+      // noise turned out to be, with a sane floor so silent rooms
+      // still need a real puff of air, not a whisper
+      const threshold = Math.max(0.10, baseline * 2.2);
+      let loudFrames = 0;
+      (function poll(){
+        if(candleOut){ stream.getTracks().forEach(t=>t.stop()); ctx.close(); return; }
+        const rms = getRMS();
+        if(rms > threshold){ loudFrames++; } else { loudFrames = Math.max(0, loudFrames-1); }
+        if(loudFrames > 3){ extinguish(); stream.getTracks().forEach(t=>t.stop()); ctx.close(); return; }
+        requestAnimationFrame(poll);
+      })();
+    }
   }catch(err){
     micStatus.textContent = "🎤 mic unavailable — tap the candle instead";
   }
@@ -544,7 +598,7 @@ document.getElementById('replayBtn').addEventListener('click', ()=>{
   idx = 0;
   document.getElementById('s1').classList.add('active');
   sealWrap.classList.remove('cracked');
-  noBtn.style.transform = 'none'; noBtn.textContent = 'Not yet'; dodges = 0;
+  noBtn.classList.remove('roaming'); noBtn.style.left=''; noBtn.style.top=''; noBtn.textContent = 'Not yet'; dodges = 0;
   flame.classList.remove('out'); candleOut = false; micStatus.textContent = "🎤 blow into the mic — or tap the candle"; tryMic();
   envelope.classList.remove('open'); letterCard.classList.remove('show');
   chatWrap.innerHTML=''; chatShown=false; chatNextBtn.style.opacity=0; chatNextBtn.style.pointerEvents='none';
