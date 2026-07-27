@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Little Something For You</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,500&family=Caveat:wght@500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+
+  /* ============================================================
+     EDIT ZONE — everything a person is likely to want to change
+     lives here as CSS custom properties or in the CONFIG object
+     down in the <script> tag at the bottom of this file.
+  ============================================================ */
+
+  :root{
+    --rose-deep:  #7A2333;
+    --rose-mid:   #A6465A;
+    --blush:      #F0C6C4;
+    --paper:      #FBF3E9;
+    --paper-line: #E7D9C6;
+    --gold:       #BE9A5C;
+    --gold-soft:  #E4CFA0;
+    --ink:        #3B1F24;
+    --ink-soft:   #6B4750;
+    --bg-top:     #F4DEDD;
+    --bg-bottom:  #D99AA0;
+
+    --display: 'Cormorant Garamond', serif;
+    --script:  'Caveat', cursive;
+    --body:    'Jost', sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0; padding:0; height:100%;
+    font-family:var(--body);
+    color:var(--ink);
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  body{
+    min-height:100dvh;
+    display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(ellipse at 20% 0%, var(--bg-top) 0%, transparent 60%),
+      linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+    overflow:hidden;
+    position:relative;
+    padding:24px;
+  }
+
+  /* ambient floating petals */
+  .petal{
+    position:fixed; top:-40px; z-index:0; pointer-events:none;
+    font-size:14px; opacity:.55;
+    animation:fall linear infinite;
+    filter: drop-shadow(0 2px 2px rgba(122,35,51,.15));
+  }
+  @keyframes fall{
+    0%{ transform:translateY(-5vh) translateX(0) rotate(0deg); }
+    100%{ transform:translateY(105vh) translateX(var(--drift,20px)) rotate(340deg); }
+  }
+
+  /* ============ phone frame ============ */
+  .phone{
+    position:relative;
+    width:min(390px, 92vw);
+    height:min(820px, 88dvh);
+    background:#1c1116;
+    border-radius:52px;
+    padding:14px;
+    box-shadow:
+      0 30px 60px -20px rgba(58,20,28,.55),
+      0 0 0 2px rgba(255,255,255,.04) inset;
+    z-index:1;
+  }
+  .phone::before{ /* notch */
+    content:'';
+    position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    width:120px; height:26px; background:#1c1116;
+    border-radius:0 0 18px 18px; z-index:5;
+  }
+  .screen-frame{
+    position:relative;
+    width:100%; height:100%;
+    background:var(--paper);
+    border-radius:38px;
+    overflow:hidden;
+  }
+
+  /* progress vine */
+  .progress{
+    position:absolute; top:22px; left:0; right:0;
+    display:flex; justify-content:center; gap:8px;
+    z-index:20;
+  }
+  .progress i{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--paper-line);
+    transition:background .4s ease, transform .4s ease;
+  }
+  .progress i.done{ background:var(--gold); transform:scale(1.25); }
+  .progress i.now{ background:var(--rose-deep); transform:scale(1.4); }
+
+  /* ============ screens ============ */
+  .screen{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center;
+    padding:70px 28px 40px;
+    opacity:0; pointer-events:none;
+    transform:translateY(14px);
+    transition:opacity .55s ease, transform .55s ease;
+  }
+  .screen.active{
+    opacity:1; pointer-events:auto; transform:translateY(0);
+  }
+
+  .eyebrow{
+    font-family:var(--body); letter-spacing:.16em; text-transform:uppercase;
+    font-size:11px; color:var(--ink-soft); margin-bottom:10px;
+  }
+  h1{
+    font-family:var(--display); font-weight:600;
+    font-size:clamp(28px,7vw,34px); line-height:1.15;
+    margin:0 0 6px; color:var(--rose-deep);
+  }
+  h1 em{ font-style:italic; color:var(--gold); }
+  .sub{
+    font-family:var(--script); font-size:22px; color:var(--ink-soft);
+    margin:0 0 22px;
+  }
+  p.copy{ font-size:15px; line-height:1.6; color:var(--ink-soft); max-width:280px; }
+
+  .btn{
+    font-family:var(--body); font-size:14px; letter-spacing:.03em;
+    padding:13px 30px; border-radius:999px; border:none;
+    cursor:pointer; transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .btn:active{ transform:scale(.96); }
+  .btn-primary{
+    background:var(--rose-deep); color:var(--paper);
+    box-shadow:0 10px 22px -8px rgba(122,35,51,.55);
+  }
+  .btn-primary:hover{ box-shadow:0 14px 26px -8px rgba(122,35,51,.65); }
+  .btn-ghost{
+    background:transparent; color:var(--ink-soft);
+    border:1px solid var(--paper-line);
+  }
+
+  /* ---- 1: wax seal cover ---- */
+  #s1{ padding-top:0; justify-content:center; }
+  .seal-wrap{ position:relative; width:150px; height:150px; margin-bottom:26px; cursor:pointer; }
+  .seal{
+    width:100%; height:100%; border-radius:50%;
+    background:radial-gradient(circle at 34% 30%, var(--rose-mid), var(--rose-deep) 70%);
+    box-shadow:0 14px 30px -10px rgba(122,35,51,.6), inset 0 0 0 3px rgba(255,255,255,.12);
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .5s cubic-bezier(.4,0,.2,1), opacity .5s ease;
+    position:relative;
+  }
+  .seal svg{ width:56px; height:56px; }
+  .seal .ring{
+    position:absolute; inset:-8px; border-radius:50%;
+    border:1px dashed var(--gold-soft); opacity:.7;
+    animation:spin 26s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .seal-wrap.cracked .seal{ transform:scale(1.5); opacity:0; }
+  .tap-hint{ font-size:12px; color:var(--ink-soft); letter-spacing:.08em; text-transform:uppercase; }
+
+  /* ---- 2: yes/no ---- */
+  .bears{ font-size:54px; margin:6px 0 22px; }
+  .choice-row{ display:flex; gap:16px; margin-top:26px; position:relative; height:50px; align-items:center; justify-content:center; width:100%; }
+  #noBtn{ position:relative; }
+
+  /* ---- 3: candle ---- */
+  .candle-wrap{ display:flex; flex-direction:column; align-items:center; margin:14px 0 10px; }
+  .flame{
+    width:14px; height:22px; margin:0 auto 2px;
+    background:radial-gradient(ellipse at 50% 70%, #FFE9A8 0%, #F6B93B 45%, #E0672A 80%);
+    border-radius:50% 50% 50% 50% / 65% 65% 35% 35%;
+    transform-origin:center bottom;
+    animation:flicker 1.4s ease-in-out infinite;
+    filter:drop-shadow(0 0 8px rgba(246,185,59,.7));
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  @keyframes flicker{
+    0%,100%{ transform:scale(1,1) rotate(-1deg); }
+    50%{ transform:scale(1.05,.95) rotate(2deg); }
+  }
+  .flame.out{ opacity:0; transform:scale(.2,.2); }
+  .wick{ width:2px; height:8px; background:#5b3a2a; margin:0 auto; }
+  .cake{ font-size:60px; margin-top:2px; }
+  .mic-status{ font-size:12px; color:var(--ink-soft); margin:14px 0 6px; min-height:16px; }
+  .smoke{
+    position:absolute; width:3px; height:3px; border-radius:50%;
+    background:rgba(120,120,120,.5); pointer-events:none;
+  }
+
+  /* ---- 4: letter ---- */
+  .envelope{
+    width:150px; height:104px; margin:10px 0 20px; cursor:pointer;
+    position:relative;
+  }
+  .envelope .body{
+    position:absolute; inset:0; background:var(--paper);
+    border:1px solid var(--gold-soft); border-radius:6px;
+    box-shadow:0 12px 20px -10px rgba(122,35,51,.35);
+  }
+  .envelope .flap{
+    position:absolute; top:0; left:0; right:0; height:56px;
+    background:linear-gradient(135deg, var(--blush), var(--rose-mid));
+    clip-path:polygon(0 0, 100% 0, 50% 92%);
+    transform-origin:top; transition:transform .5s ease;
+    border-radius:6px 6px 0 0;
+  }
+  .envelope.open .flap{ transform:rotateX(180deg); }
+  .envelope .seal-dot{
+    position:absolute; top:38px; left:50%; transform:translate(-50%,0);
+    width:22px; height:22px; border-radius:50%; background:var(--gold);
+    display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff;
+    box-shadow:0 4px 8px rgba(0,0,0,.2);
+  }
+  .letter-card{
+    background:var(--paper); border:1px solid var(--paper-line); border-radius:16px;
+    padding:22px 20px; max-height:0; overflow:hidden; opacity:0;
+    transition:max-height .7s ease, opacity .6s ease, padding .7s ease;
+    text-align:left; width:100%;
+  }
+  .letter-card.show{ max-height:420px; opacity:1; }
+  .letter-card .to{ font-family:var(--display); font-style:italic; font-size:17px; color:var(--rose-deep); margin:0 0 10px; }
+  .letter-card p{ font-size:13.5px; line-height:1.65; color:var(--ink-soft); margin:0 0 10px; }
+  .letter-card .sign{ font-family:var(--script); font-size:20px; color:var(--rose-deep); margin-top:6px; }
+
+  /* ---- 5: rose chat ---- */
+  .chat-wrap{ width:100%; display:flex; flex-direction:column; gap:9px; margin:8px 0 18px; }
+  .bubble{
+    max-width:76%; padding:9px 14px; border-radius:16px; font-size:12.5px; line-height:1.4;
+    opacity:0; transform:translateY(8px); animation:pop .5s ease forwards;
+  }
+  .bubble.left{ align-self:flex-start; background:#fff; border:1px solid var(--paper-line); border-bottom-left-radius:4px; }
+  .bubble.right{ align-self:flex-end; background:var(--rose-deep); color:var(--paper); border-bottom-right-radius:4px; }
+  @keyframes pop{ to{ opacity:1; transform:translateY(0); } }
+  .rose-photo{
+    width:150px; height:150px; margin:6px auto 10px; border-radius:14px;
+    background:
+      radial-gradient(circle at 30% 30%, #C6273A, #7A1626 70%);
+    display:flex; align-items:center; justify-content:center; font-size:52px;
+    box-shadow:0 14px 26px -10px rgba(122,35,51,.5);
+  }
+
+  /* ---- 6: gift ---- */
+  .gift-wrap{ position:relative; width:130px; height:130px; margin:10px 0 22px; cursor:pointer; }
+  .gift{ font-size:100px; line-height:1; transition:transform .35s ease; }
+  .gift-wrap:not(.opened):hover .gift{ transform:scale(1.06) rotate(-3deg); }
+  .gift-wrap.opened .gift{ transform:scale(1.15); filter:blur(1px); opacity:0; transition:all .5s ease; }
+  .badge{
+    position:absolute; top:-6px; right:-6px; width:24px; height:24px; border-radius:50%;
+    background:var(--rose-deep); color:#fff; font-size:12px; display:flex; align-items:center; justify-content:center;
+    animation:bob 1.6s ease-in-out infinite;
+  }
+  @keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-5px); } }
+  .final-card{
+    background:#fff; border-radius:18px; padding:22px; box-shadow:0 16px 30px -14px rgba(122,35,51,.4);
+    opacity:0; transform:scale(.9); transition:all .6s cubic-bezier(.34,1.56,.64,1);
+  }
+  .final-card.show{ opacity:1; transform:scale(1); }
+  .final-card .emoji{ font-size:44px; margin-bottom:6px; }
+  .replay{ margin-top:18px; }
+
+  .confetti{ position:fixed; top:-10px; width:7px; height:11px; z-index:40; pointer-events:none; }
+
+  @media (prefers-reduced-motion: reduce){
+    .petal, .seal .ring, .flame, .badge{ animation:none !important; }
+    *{ transition-duration:.15s !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="petals"></div>
+
+<div class="phone">
+  <div class="screen-frame">
+    <div class="progress" id="progress"></div>
+
+    <!-- 1 :: SEAL / OPEN -->
+    <section class="screen active" id="s1">
+      <div class="eyebrow">a little something for</div>
+      <h1 id="coverName">Meri Jaan</h1>
+      <div class="seal-wrap" id="sealWrap" role="button" aria-label="Open">
+        <div class="ring"></div>
+        <div class="seal">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 21s-8-5.2-8-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.8-8 11-8 11-.3.2-.7.2-1 0" fill="#FBF3E9"/></svg>
+        </div>
+      </div>
+      <div class="tap-hint">tap the seal to open</div>
+    </section>
+
+    <!-- 2 :: HAPPY BIRTHDAY -->
+    <section class="screen" id="s2">
+      <div class="eyebrow">happy birthday</div>
+      <h1>To My <em>Favourite</em><br>Person</h1>
+      <div class="bears">🐻🐼</div>
+      <p class="copy" id="s2copy">A tiny journey, made just for you. Ready?</p>
+      <div class="choice-row">
+        <button class="btn btn-primary" id="yesBtn">Yes, show me</button>
+        <button class="btn btn-ghost" id="noBtn">Not yet</button>
+      </div>
+    </section>
+
+    <!-- 3 :: CANDLE -->
+    <section class="screen" id="s3">
+      <div class="eyebrow">make a wish</div>
+      <h1>Blow The Candle</h1>
+      <div class="candle-wrap">
+        <div class="flame" id="flame"></div>
+        <div class="wick"></div>
+        <div class="cake">🎂</div>
+      </div>
+      <div class="mic-status" id="micStatus">🎤 blow into the mic — or tap the candle</div>
+    </section>
+
+    <!-- 4 :: LETTER -->
+    <section class="screen" id="s4">
+      <div class="eyebrow">a message from my heart</div>
+      <h1 style="margin-bottom:14px;">Just For You</h1>
+      <div class="envelope" id="envelope">
+        <div class="body"></div>
+        <div class="flap"></div>
+        <div class="seal-dot">♥</div>
+      </div>
+      <div class="letter-card" id="letterCard">
+        <p class="to">Dear <span id="letterName">Meri Jaan</span>,</p>
+        <p id="letterBody">Happy birthday to my truly special person, the love of my life. You are always there — my soulmate, my sweet soul — and I'm so grateful to have you in my life.</p>
+        <p>My love for you grows deeper every day. You mean the world to me. On your special day, I wish you all the happiness and joy that you deserve.</p>
+        <div class="sign" id="letterSign">— Always yours</div>
+      </div>
+    </section>
+
+    <!-- 5 :: ROSES -->
+    <section class="screen" id="s5">
+      <div class="eyebrow">your rose bouquet</div>
+      <h1 style="margin-bottom:14px;">🌹</h1>
+      <div class="rose-photo">🌹</div>
+      <div class="chat-wrap" id="chatWrap"></div>
+      <button class="btn btn-primary" id="chatNext" style="opacity:0; pointer-events:none; transition:opacity .4s;">Continue</button>
+    </section>
+
+    <!-- 6 :: GIFT -->
+    <section class="screen" id="s6">
+      <div class="eyebrow">one last thing</div>
+      <h1 style="margin-bottom:8px;">Tap The Gift</h1>
+      <div class="gift-wrap" id="giftWrap">
+        <span class="badge">1</span>
+        <div class="gift">🎁</div>
+      </div>
+      <div class="final-card" id="finalCard">
+        <div class="emoji">💌</div>
+        <h1 style="font-size:22px;">Lots Of Love<br>For You</h1>
+        <p class="copy" id="finalMsg" style="margin:8px auto 0;">Once again, happy birthday, Meri Jaan. Here's to you — today and always.</p>
+        <button class="btn btn-ghost replay" id="replayBtn">Watch again ↺</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — edit these values to personalize the experience.
+   Everything visible in the card pulls from here.
+============================================================ */
+const CONFIG = {
+  recipientName: "Meri Jaan",
+  senderSign: "— Always yours",
+  letterBody: "Happy birthday to my truly special person, the love of my life. You are always there — my soulmate, my sweet soul — and I'm so grateful to have you in my life.",
+  roseMessages: [
+    { side:'right', text:"Happy Birthday, Meri Jaan ❤️" },
+    { side:'left',  text:"My heart, always." },
+    { side:'right', text:"Forever yours 💍" },
+    { side:'left',  text:"I'd choose you again." },
+  ],
+  finalMessage: "Once again, happy birthday, Meri Jaan. Here's to you — today and always."
+};
+
+document.getElementById('coverName').textContent = CONFIG.recipientName;
+document.getElementById('letterName').textContent = CONFIG.recipientName;
+document.getElementById('letterBody').textContent = CONFIG.letterBody;
+document.getElementById('letterSign').textContent = CONFIG.senderSign;
+document.getElementById('finalMsg').textContent = CONFIG.finalMessage;
+
+/* ---------- petals ---------- */
+const petalHost = document.getElementById('petals');
+const petalChars = ['🌸','❤️','✨'];
+for(let i=0;i<14;i++){
+  const p = document.createElement('div');
+  p.className='petal';
+  p.textContent = petalChars[i % petalChars.length];
+  p.style.left = Math.random()*100+'vw';
+  p.style.setProperty('--drift', (Math.random()*80-40)+'px');
+  p.style.animationDuration = (10+Math.random()*10)+'s';
+  p.style.animationDelay = (Math.random()*10)+'s';
+  p.style.fontSize = (10+Math.random()*10)+'px';
+  petalHost.appendChild(p);
+}
+
+/* ---------- navigation ---------- */
+const order = ['s1','s2','s3','s4','s5','s6'];
+let idx = 0;
+const progressHost = document.getElementById('progress');
+order.forEach(()=>{
+  const dot = document.createElement('i');
+  progressHost.appendChild(dot);
+});
+function renderProgress(){
+  [...progressHost.children].forEach((d,i)=>{
+    d.classList.toggle('done', i < idx);
+    d.classList.toggle('now', i === idx);
+  });
+}
+function goTo(i){
+  document.getElementById(order[idx]).classList.remove('active');
+  idx = i;
+  document.getElementById(order[idx]).classList.add('active');
+  renderProgress();
+}
+function next(){ if(idx < order.length-1) goTo(idx+1); }
+renderProgress();
+
+/* ---------- 1: seal ---------- */
+const sealWrap = document.getElementById('sealWrap');
+sealWrap.addEventListener('click', ()=>{
+  sealWrap.classList.add('cracked');
+  setTimeout(next, 480);
+});
+
+/* ---------- 2: yes / dodging no ---------- */
+const yesBtn = document.getElementById('yesBtn');
+const noBtn = document.getElementById('noBtn');
+const choiceRow = document.querySelector('.choice-row');
+yesBtn.addEventListener('click', next);
+let dodges = 0;
+function dodge(e){
+  e.preventDefault();
+  dodges++;
+  const bounds = choiceRow.getBoundingClientRect();
+  const maxX = bounds.width/2 - 50;
+  const maxY = 60;
+  const x = (Math.random()*2-1)*maxX;
+  const y = (Math.random()*2-1)*maxY;
+  noBtn.style.transform = `translate(${x}px, ${y}px)`;
+  if(dodges > 3){ noBtn.textContent = "Okay okay 🥺"; }
+}
+noBtn.addEventListener('pointerenter', dodge);
+noBtn.addEventListener('pointerdown', dodge);
+
+/* ---------- 3: candle ---------- */
+const flame = document.getElementById('flame');
+const micStatus = document.getElementById('micStatus');
+let candleOut = false;
+function extinguish(){
+  if(candleOut) return;
+  candleOut = true;
+  flame.classList.add('out');
+  micStatus.textContent = "🎉 wish made!";
+  setTimeout(next, 900);
+}
+flame.addEventListener('click', extinguish);
+document.querySelector('.cake').addEventListener('click', extinguish);
+
+async function tryMic(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const source = ctx.createMediaStreamSource(stream);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    source.connect(analyser);
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    micStatus.textContent = "🎤 go ahead — blow!";
+    let loudFrames = 0;
+    (function poll(){
+      if(candleOut){ stream.getTracks().forEach(t=>t.stop()); ctx.close(); return; }
+      analyser.getByteFrequencyData(data);
+      const avg = data.reduce((a,b)=>a+b,0)/data.length;
+      if(avg > 28){ loudFrames++; } else { loudFrames = Math.max(0, loudFrames-1); }
+      if(loudFrames > 4){ extinguish(); stream.getTracks().forEach(t=>t.stop()); ctx.close(); return; }
+      requestAnimationFrame(poll);
+    })();
+  }catch(err){
+    micStatus.textContent = "🎤 mic unavailable — tap the candle instead";
+  }
+}
+tryMic();
+
+/* ---------- 4: letter ---------- */
+const envelope = document.getElementById('envelope');
+const letterCard = document.getElementById('letterCard');
+envelope.addEventListener('click', ()=>{
+  envelope.classList.add('open');
+  setTimeout(()=>{ letterCard.classList.add('show'); }, 350);
+});
+
+/* ---------- 5: rose chat ---------- */
+const chatWrap = document.getElementById('chatWrap');
+const chatNextBtn = document.getElementById('chatNext');
+let chatShown = false;
+function playChat(){
+  if(chatShown) return;
+  chatShown = true;
+  CONFIG.roseMessages.forEach((m, i)=>{
+    setTimeout(()=>{
+      const b = document.createElement('div');
+      b.className = 'bubble ' + (m.side==='right' ? 'right':'left');
+      b.textContent = m.text;
+      chatWrap.appendChild(b);
+      if(i === CONFIG.roseMessages.length-1){
+        setTimeout(()=>{
+          chatNextBtn.style.opacity = 1;
+          chatNextBtn.style.pointerEvents = 'auto';
+        }, 500);
+      }
+    }, i*650);
+  });
+}
+chatNextBtn.addEventListener('click', next);
+
+/* ---------- 6: gift ---------- */
+const giftWrap = document.getElementById('giftWrap');
+const finalCard = document.getElementById('finalCard');
+giftWrap.addEventListener('click', ()=>{
+  if(giftWrap.classList.contains('opened')) return;
+  giftWrap.classList.add('opened');
+  launchConfetti();
+  setTimeout(()=>{ finalCard.classList.add('show'); }, 300);
+});
+document.getElementById('replayBtn').addEventListener('click', ()=>{
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  idx = 0;
+  document.getElementById('s1').classList.add('active');
+  sealWrap.classList.remove('cracked');
+  noBtn.style.transform = 'none'; noBtn.textContent = 'Not yet'; dodges = 0;
+  flame.classList.remove('out'); candleOut = false; micStatus.textContent = "🎤 blow into the mic — or tap the candle"; tryMic();
+  envelope.classList.remove('open'); letterCard.classList.remove('show');
+  chatWrap.innerHTML=''; chatShown=false; chatNextBtn.style.opacity=0; chatNextBtn.style.pointerEvents='none';
+  giftWrap.classList.remove('opened'); finalCard.classList.remove('show');
+  renderProgress();
+});
+
+function launchConfetti(){
+  const colors = ['#7A2333','#BE9A5C','#F0C6C4','#A6465A'];
+  for(let i=0;i<40;i++){
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random()*100+'vw';
+    c.style.background = colors[i%colors.length];
+    c.style.borderRadius = Math.random()>0.5 ? '50%':'2px';
+    c.style.transform = `rotate(${Math.random()*360}deg)`;
+    c.style.animation = `confettiFall ${1.6+Math.random()*1.4}s ease-in forwards`;
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 3200);
+  }
+}
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `@keyframes confettiFall{ to{ transform:translateY(105vh) rotate(400deg); opacity:.9; } }`;
+document.head.appendChild(styleSheet);
+
+/* trigger rose chat when its screen becomes active */
+const s5 = document.getElementById('s5');
+new MutationObserver(()=>{ if(s5.classList.contains('active')) playChat(); })
+  .observe(s5, { attributes:true, attributeFilter:['class'] });
+</script>
+</body>
+</html>
