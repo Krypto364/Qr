@@ -105,6 +105,19 @@
   .progress i.done{ background:var(--gold); transform:scale(1.25); }
   .progress i.now{ background:var(--rose-deep); transform:scale(1.4); }
 
+  /* portal flash on transitions */
+  #flash{
+    position:absolute; inset:0; z-index:50; pointer-events:none;
+    background:radial-gradient(circle at 50% 42%, rgba(255,255,255,.95), rgba(255,244,238,.4) 45%, rgba(255,244,238,0) 72%);
+    opacity:0;
+  }
+  #flash.pulse{ animation:flashPulse .6s ease; }
+  @keyframes flashPulse{
+    0%{ opacity:0; }
+    18%{ opacity:.9; }
+    100%{ opacity:0; }
+  }
+
   /* ============ screens ============ */
   .screen{
     position:absolute; inset:0;
@@ -112,11 +125,12 @@
     text-align:center;
     padding:70px 28px 40px;
     opacity:0; pointer-events:none;
-    transform:translateY(14px);
-    transition:opacity .55s ease, transform .55s ease;
+    transform:translateY(18px) scale(.93);
+    filter:blur(7px);
+    transition:opacity .65s cubic-bezier(.22,.61,.36,1), transform .65s cubic-bezier(.22,.61,.36,1), filter .65s ease;
   }
   .screen.active{
-    opacity:1; pointer-events:auto; transform:translateY(0);
+    opacity:1; pointer-events:auto; transform:translateY(0) scale(1); filter:blur(0);
   }
 
   .eyebrow{
@@ -228,31 +242,194 @@
   }
   .letter-card{
     background:var(--paper); border:1px solid var(--paper-line); border-radius:16px;
-    padding:22px 20px; max-height:0; overflow:hidden; opacity:0;
+    padding:22px 20px; max-height:0; overflow-y:auto; overflow-x:hidden; opacity:0;
     transition:max-height .7s ease, opacity .6s ease, padding .7s ease;
     text-align:left; width:100%;
+    scroll-behavior:smooth;
+    scrollbar-width:none; /* firefox: keep it looking like a letter, not a scroll box */
+    -webkit-mask-image:linear-gradient(to bottom, transparent 0, black 14px, black calc(100% - 6px), transparent 100%);
+            mask-image:linear-gradient(to bottom, transparent 0, black 14px, black calc(100% - 6px), transparent 100%);
   }
-  .letter-card.show{ max-height:420px; opacity:1; }
+  .letter-card::-webkit-scrollbar{ display:none; }
+  .letter-card.show{ max-height:225px; opacity:1; }
   .letter-card .to{ font-family:var(--display); font-style:italic; font-size:17px; color:var(--rose-deep); margin:0 0 10px; }
   .letter-card p{ font-size:13.5px; line-height:1.65; color:var(--ink-soft); margin:0 0 10px; }
-  .letter-card .sign{ font-family:var(--script); font-size:20px; color:var(--rose-deep); margin-top:6px; }
+  .letter-card .sign{
+    font-family:var(--script); font-size:20px; color:var(--rose-deep); margin-top:6px;
+    opacity:0; transition:opacity .6s ease;
+  }
+  .letter-card .sign.show{ opacity:1; }
+  .letter-card p.typing::after{
+    content:''; display:inline-block; width:2px; height:12px; margin-left:2px;
+    background:var(--rose-mid); vertical-align:middle;
+    animation:caretBlink .8s steps(1) infinite;
+  }
+  @keyframes caretBlink{ 50%{ opacity:0; } }
 
-  /* ---- 5: rose chat ---- */
-  .chat-wrap{ width:100%; display:flex; flex-direction:column; gap:9px; margin:8px 0 18px; }
-  .bubble{
-    max-width:76%; padding:9px 14px; border-radius:16px; font-size:12.5px; line-height:1.4;
-    opacity:0; transform:translateY(8px); animation:pop .5s ease forwards;
+  /* ---- 4b: photo burst ---- */
+  .letter-stage{ position:relative; width:100%; height:130px; display:flex; align-items:center; justify-content:center; }
+  .photo-fly{ position:absolute; inset:0; pointer-events:none; z-index:15; }
+  .polaroid{
+    position:absolute; top:50%; left:50%; width:58px; height:70px;
+    background:#fff; padding:4px 4px 12px; border-radius:5px;
+    box-shadow:0 10px 20px -8px rgba(122,35,51,.45);
+    transform:translate(-50%,-50%) scale(.15) rotate(0deg);
+    opacity:0;
+    transition:transform 1s cubic-bezier(.17,.89,.32,1.28), opacity .35s ease;
   }
-  .bubble.left{ align-self:flex-start; background:#fff; border:1px solid var(--paper-line); border-bottom-left-radius:4px; }
-  .bubble.right{ align-self:flex-end; background:var(--rose-deep); color:var(--paper); border-bottom-right-radius:4px; }
-  @keyframes pop{ to{ opacity:1; transform:translateY(0); } }
-  .rose-photo{
-    width:150px; height:150px; margin:6px auto 10px; border-radius:14px;
+  .polaroid.fly{ opacity:1; }
+  .polaroid img{ width:100%; height:46px; object-fit:cover; border-radius:2px; display:block; }
+  .polaroid .ph-placeholder{
+    width:100%; height:46px; border-radius:2px; display:flex; align-items:center; justify-content:center;
+    font-size:18px; background:linear-gradient(135deg, var(--blush), var(--rose-mid));
+  }
+
+  /* ---- 4c: test of love meter ---- */
+  .love-meter{
+    width:100%; max-width:250px; margin:6px 0 6px; opacity:0; transform:translateY(6px);
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  .love-meter.show{ opacity:1; transform:translateY(0); }
+  .love-meter-label{
+    font-family:var(--script); font-size:16px; color:var(--rose-deep); margin-bottom:6px; text-align:center;
+  }
+  .love-meter-track{
+    width:100%; height:10px; border-radius:999px; background:var(--paper-line); overflow:hidden;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.08);
+  }
+  .love-meter-fill{
+    height:100%; width:0%; border-radius:999px;
+    background:linear-gradient(90deg, var(--rose-mid), var(--rose-deep));
+    transition:width 2.4s cubic-bezier(.3,.6,.2,1);
+  }
+
+  /* ---- 5: rose bouquet (scattered messages) ---- */
+  #s5{ padding-top:56px; padding-bottom:24px; }
+  .bouquet-stage{
+    position:relative; width:100%; flex:1; min-height:400px;
+  }
+  .tree{ position:absolute; width:74px; height:auto; opacity:.55; z-index:1; }
+  .tree-bl{ left:-6px; bottom:2px; }
+  .tree-br{ right:-6px; bottom:2px; }
+
+  .bubble-scatter{ position:absolute; inset:0; z-index:5; }
+  .scatter-bubble{
+    position:absolute; max-width:112px; padding:8px 12px; border-radius:16px;
+    background:#fff; border:1px solid var(--paper-line);
+    font-size:11px; line-height:1.35; color:var(--ink); font-family:var(--body);
+    box-shadow:0 10px 20px -10px rgba(122,35,51,.35);
+    opacity:0; transform:scale(.35) translateY(12px);
+    transition:opacity .6s cubic-bezier(.34,1.5,.4,1), transform .6s cubic-bezier(.34,1.5,.4,1);
+  }
+  .scatter-bubble.show{ opacity:1; transform:scale(1) translateY(0); }
+  .scatter-bubble.highlight{ color:var(--rose-deep); font-weight:600; border-color:var(--gold-soft); }
+  .scatter-bubble.pos-tl{ top:0%;   left:0%; }
+  .scatter-bubble.pos-tr{ top:0%;   right:0%;  text-align:right; }
+  .scatter-bubble.pos-ml{ top:36%;  left:-2%;  }
+  .scatter-bubble.pos-mr{ top:36%;  right:-2%; text-align:right; }
+  .scatter-bubble.pos-bl{ bottom:2%; left:0%;  }
+  .scatter-bubble.pos-br{ bottom:2%; right:0%; text-align:right; }
+
+  .bouquet-wrap{
+    position:absolute; left:50%; top:52%; transform:translate(-50%,-50%);
+    width:190px; height:212px; z-index:4;
+  }
+  .bouquet-paper-back{
+    position:absolute; left:50%; bottom:0; transform:translateX(-50%) rotate(-7deg) scale(.6);
+    width:106px; height:90px;
+    background:linear-gradient(160deg, #ECD5AA, #C99A66);
+    clip-path:polygon(20% 0%, 80% 0%, 96% 100%, 4% 100%);
+    box-shadow:0 10px 18px -10px rgba(122,35,51,.3);
+    opacity:0; transition:opacity .6s ease, transform .6s cubic-bezier(.34,1.5,.4,1);
+  }
+  .bouquet-paper-back.show{ opacity:1; transform:translateX(-50%) rotate(-7deg) scale(1); }
+  .bouquet-paper-back.two{ transform:translateX(-50%) rotate(8deg) scale(.6); }
+  .bouquet-paper-back.two.show{ transform:translateX(-50%) rotate(8deg) scale(1); }
+  .bouquet-paper{
+    position:absolute; left:50%; bottom:0; transform:translateX(-50%) scale(.6);
+    width:128px; height:100px;
     background:
-      radial-gradient(circle at 30% 30%, #C6273A, #7A1626 70%);
-    display:flex; align-items:center; justify-content:center; font-size:52px;
-    box-shadow:0 14px 26px -10px rgba(122,35,51,.5);
+      linear-gradient(100deg, rgba(0,0,0,.12) 0%, transparent 14%, transparent 42%, rgba(255,255,255,.45) 48%, transparent 55%, transparent 80%, rgba(0,0,0,.14) 100%),
+      linear-gradient(165deg, #FBF1DC, #E7C9A0 58%, #D2A473);
+    clip-path:polygon(18% 0%, 82% 0%, 100% 100%, 0% 100%);
+    box-shadow:0 16px 26px -10px rgba(122,35,51,.4), inset 0 2px 3px rgba(255,255,255,.5);
+    opacity:0; transition:opacity .6s ease, transform .6s cubic-bezier(.34,1.5,.4,1);
   }
+  .bouquet-paper.show{ opacity:1; transform:translateX(-50%) scale(1); }
+  .bouquet-twine{
+    position:absolute; left:50%; bottom:40px; transform:translateX(-50%) scaleX(0);
+    width:64px; height:5px; border-radius:3px; transform-origin:center;
+    background:linear-gradient(90deg, var(--gold-soft), var(--gold));
+    box-shadow:0 2px 4px rgba(0,0,0,.2);
+    opacity:0; transition:opacity .4s ease, transform .45s cubic-bezier(.34,1.5,.4,1);
+  }
+  .bouquet-twine.show{ opacity:1; transform:translateX(-50%) scaleX(1); }
+  .bouquet-ribbon{
+    position:absolute; left:50%; bottom:34px; transform:translateX(-50%) scale(.4) rotate(-8deg);
+    font-size:30px; opacity:0; filter:drop-shadow(0 4px 6px rgba(0,0,0,.25));
+    transition:opacity .5s ease, transform .5s cubic-bezier(.34,1.6,.4,1);
+  }
+  .bouquet-ribbon.show{ opacity:1; transform:translateX(-50%) scale(1) rotate(-8deg); }
+  .bouquet-heads{ position:absolute; left:50%; bottom:58px; transform:translateX(-50%); width:182px; height:150px; z-index:2; }
+  .rose-emoji{
+    position:absolute; font-size:32px; z-index:2;
+    filter:drop-shadow(0 4px 6px rgba(122,35,51,.35));
+    transform:translate(-50%,-50%) scale(0) rotate(var(--rot,0deg));
+    transition:transform .6s cubic-bezier(.34,1.6,.4,1);
+  }
+  .rose-emoji.show{ transform:translate(-50%,-50%) scale(1) rotate(var(--rot,0deg)); }
+  .leaf-emoji{
+    position:absolute; font-size:27px; z-index:1;
+    filter:drop-shadow(0 3px 4px rgba(50,70,35,.35));
+    transform:translate(-50%,-50%) scale(0) rotate(var(--rot,0deg));
+    transition:transform .6s cubic-bezier(.34,1.6,.4,1);
+  }
+  .leaf-emoji.show{ transform:translate(-50%,-50%) scale(1) rotate(var(--rot,0deg)); }
+
+  .converge-petal{
+    position:absolute; font-size:14px; opacity:1; pointer-events:none; z-index:3;
+    transform:translate(0,0) scale(1) rotate(0deg);
+    transition:transform .85s cubic-bezier(.2,.7,.3,1), opacity .85s ease;
+  }
+
+  /* ---- 6: balloon pop ---- */
+  #s6{ padding-top:64px; }
+  .balloon-header{ display:flex; align-items:flex-start; justify-content:space-between; width:100%; gap:10px; }
+  .balloon-header h1{ font-size:21px; text-align:left; margin:0; }
+  .balloon-counter{
+    flex-shrink:0; background:#fff; border:1px solid var(--paper-line);
+    padding:6px 12px; border-radius:999px; font-size:10px; font-weight:600;
+    letter-spacing:.04em; color:var(--rose-deep); white-space:nowrap; margin-top:2px;
+    box-shadow:0 8px 16px -8px rgba(122,35,51,.3);
+  }
+  .balloon-stage{ position:relative; width:100%; flex:1; min-height:340px; margin-top:14px; }
+  .balloon{
+    position:absolute; width:86px; height:112px; cursor:pointer;
+    animation:bobBalloon 3.6s ease-in-out infinite;
+    animation-delay:inherit;
+  }
+  @keyframes bobBalloon{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-8px); } }
+  .balloon .body{
+    width:100%; height:78%; margin:0 auto;
+    border-radius:50% 50% 48% 48% / 58% 58% 42% 42%;
+    background:
+      radial-gradient(circle at 32% 26%, rgba(255,255,255,.85), transparent 32%),
+      linear-gradient(160deg, var(--bln-light), var(--bln-dark));
+    box-shadow:0 16px 26px -14px rgba(50,20,30,.5), inset -8px -10px 16px rgba(0,0,0,.08);
+    transition:transform .35s cubic-bezier(.34,1.6,.4,1), opacity .3s ease;
+  }
+  .balloon .knot{ width:8px; height:8px; background:var(--bln-dark); margin:0 auto; border-radius:0 0 4px 4px; transition:opacity .2s ease; }
+  .balloon .string{ width:1.5px; height:30px; background:var(--paper-line); margin:0 auto; opacity:.8; transition:opacity .2s ease; }
+  .balloon.popped{ pointer-events:none; animation:none; }
+  .balloon.popped .body{ transform:scale(1.35); opacity:0; }
+  .balloon.popped .knot, .balloon.popped .string{ opacity:0; }
+  .balloon-word{
+    position:absolute; width:120px; margin-left:-60px;
+    font-family:var(--script); font-size:19px; color:var(--rose-deep); text-align:center;
+    opacity:0; transform:translateY(10px) scale(.8); pointer-events:none;
+    transition:opacity .5s ease, transform .5s cubic-bezier(.34,1.4,.4,1);
+  }
+  .balloon-word.show{ opacity:1; transform:translateY(0) scale(1); }
 
   /* ---- 6: gift ---- */
   .gift-wrap{ position:relative; width:130px; height:130px; margin:10px 0 22px; cursor:pointer; }
@@ -265,12 +442,21 @@
     animation:bob 1.6s ease-in-out infinite;
   }
   @keyframes bob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-5px); } }
+  @keyframes giftShake{
+    0%,100%{ transform:rotate(0deg) scale(1); }
+    20%{ transform:rotate(-9deg) scale(1.04); }
+    40%{ transform:rotate(8deg) scale(1.06); }
+    60%{ transform:rotate(-6deg) scale(1.04); }
+    80%{ transform:rotate(3deg) scale(1.01); }
+  }
+  .gift-hint{ font-size:12px; color:var(--ink-soft); margin-top:2px; min-height:16px; }
   .final-card{
     background:#fff; border-radius:18px; padding:22px; box-shadow:0 16px 30px -14px rgba(122,35,51,.4);
     opacity:0; transform:scale(.9); transition:all .6s cubic-bezier(.34,1.56,.64,1);
   }
   .final-card.show{ opacity:1; transform:scale(1); }
   .final-card .emoji{ font-size:44px; margin-bottom:6px; }
+  .final-card .final-bouquet{ font-size:38px; margin:2px 0 4px; letter-spacing:-4px; }
   .replay{ margin-top:18px; }
 
   .confetti{ position:fixed; top:-10px; width:7px; height:11px; z-index:40; pointer-events:none; }
@@ -288,6 +474,7 @@
 <div class="phone">
   <div class="screen-frame">
     <div class="progress" id="progress"></div>
+    <div id="flash"></div>
 
     <!-- 1 :: SEAL / OPEN -->
     <section class="screen active" id="s1">
@@ -329,38 +516,94 @@
     <!-- 4 :: LETTER -->
     <section class="screen" id="s4">
       <div class="eyebrow">a message from my heart</div>
-      <h1 style="margin-bottom:14px;">Just For You</h1>
-      <div class="envelope" id="envelope">
-        <div class="body"></div>
-        <div class="flap"></div>
-        <div class="seal-dot">♥</div>
+      <h1 style="margin-bottom:10px;">Just For You</h1>
+      <div class="letter-stage" id="letterStage">
+        <div class="photo-fly" id="photoFly"></div>
+        <div class="envelope" id="envelope">
+          <div class="body"></div>
+          <div class="flap"></div>
+          <div class="seal-dot">♥</div>
+        </div>
       </div>
       <div class="letter-card" id="letterCard">
         <p class="to">Dear <span id="letterName">Meri Jaan</span>,</p>
-        <p id="letterBody">Happy birthday to my truly special person, the love of my life. You are always there — my soulmate, my sweet soul — and I'm so grateful to have you in my life.</p>
-        <p>My love for you grows deeper every day. You mean the world to me. On your special day, I wish you all the happiness and joy that you deserve.</p>
+        <p id="letterBody"></p>
+        <p id="letterBody2"></p>
         <div class="sign" id="letterSign">— Always yours</div>
       </div>
+      <div class="love-meter" id="loveMeter">
+        <div class="love-meter-label" id="loveMeterLabel">testing love…</div>
+        <div class="love-meter-track"><div class="love-meter-fill" id="loveMeterFill"></div></div>
+      </div>
+      <button class="btn btn-primary" id="letterNext" style="opacity:0; pointer-events:none; margin-top:16px; transition:opacity .4s;">Continue</button>
     </section>
 
     <!-- 5 :: ROSES -->
     <section class="screen" id="s5">
       <div class="eyebrow">your rose bouquet</div>
-      <h1 style="margin-bottom:14px;">🌹</h1>
-      <div class="rose-photo">🌹</div>
-      <div class="chat-wrap" id="chatWrap"></div>
+      <h1 style="margin-bottom:4px;">Your Rose <em>Bouquet</em></h1>
+      <div class="bouquet-stage" id="bouquetStage">
+        <svg class="tree tree-bl" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="37" y="55" width="6" height="42" rx="2" fill="#8A5A46"/>
+          <g fill="#A6465A" opacity=".85">
+            <circle cx="40" cy="30" r="20"/><circle cx="20" cy="42" r="13"/><circle cx="60" cy="42" r="13"/>
+          </g>
+          <g fill="#F0C6C4"><path d="M40 22l2 4h-4z"/><path d="M22 36l2 4h-4z"/><path d="M58 36l2 4h-4z"/></g>
+        </svg>
+        <svg class="tree tree-br" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="37" y="55" width="6" height="42" rx="2" fill="#8A5A46"/>
+          <g fill="#A6465A" opacity=".85">
+            <circle cx="40" cy="30" r="20"/><circle cx="20" cy="42" r="13"/><circle cx="60" cy="42" r="13"/>
+          </g>
+          <g fill="#F0C6C4"><path d="M40 22l2 4h-4z"/><path d="M22 36l2 4h-4z"/><path d="M58 36l2 4h-4z"/></g>
+        </svg>
+        <div class="bubble-scatter" id="bubbleScatter"></div>
+        <div class="bouquet-wrap" id="bouquetArt">
+          <div class="bouquet-paper-back two" id="bouquetPaperBack2"></div>
+          <div class="bouquet-paper-back" id="bouquetPaperBack1"></div>
+          <div class="bouquet-paper"></div>
+          <div class="bouquet-heads">
+            <span class="leaf-emoji" style="left:6%;  top:52%; --rot:-22deg; font-size:30px;">🍃</span>
+            <span class="leaf-emoji" style="left:94%; top:52%; --rot:22deg;  font-size:30px;">🍃</span>
+            <span class="leaf-emoji" style="left:22%; top:74%; --rot:-12deg;">🍃</span>
+            <span class="leaf-emoji" style="left:78%; top:74%; --rot:12deg;">🍃</span>
+            <span class="rose-emoji" style="left:50%; top:10%; --rot:-3deg;  font-size:29px;">🌹</span>
+            <span class="rose-emoji" style="left:30%; top:24%; --rot:9deg;   font-size:33px;">🌹</span>
+            <span class="rose-emoji" style="left:70%; top:24%; --rot:-8deg;  font-size:33px;">🌹</span>
+            <span class="rose-emoji" style="left:14%; top:44%; --rot:6deg;   font-size:31px;">🌹</span>
+            <span class="rose-emoji" style="left:86%; top:44%; --rot:-7deg;  font-size:31px;">🌹</span>
+            <span class="rose-emoji" style="left:38%; top:54%; --rot:11deg;  font-size:35px;">🌹</span>
+            <span class="rose-emoji" style="left:62%; top:54%; --rot:-10deg; font-size:35px;">🌹</span>
+            <span class="rose-emoji" style="left:50%; top:66%; --rot:2deg;   font-size:37px;">🌹</span>
+          </div>
+          <div class="bouquet-twine" id="bouquetTwine"></div>
+          <div class="bouquet-ribbon">🎀</div>
+        </div>
+      </div>
       <button class="btn btn-primary" id="chatNext" style="opacity:0; pointer-events:none; transition:opacity .4s;">Continue</button>
     </section>
 
-    <!-- 6 :: GIFT -->
+    <!-- 6 :: BALLOON POP -->
     <section class="screen" id="s6">
+      <div class="balloon-header">
+        <h1>Pop All <em>4</em><br>Balloons</h1>
+        <div class="balloon-counter" id="balloonCounter">0/4 popped</div>
+      </div>
+      <div class="balloon-stage" id="balloonStage"></div>
+      <button class="btn btn-primary" id="balloonNext" style="opacity:0; pointer-events:none; margin-top:8px; transition:opacity .4s;">Continue</button>
+    </section>
+
+    <!-- 7 :: GIFT -->
+    <section class="screen" id="s7">
       <div class="eyebrow">one last thing</div>
       <h1 style="margin-bottom:8px;">Tap The Gift</h1>
       <div class="gift-wrap" id="giftWrap">
-        <span class="badge">1</span>
+        <span class="badge" id="giftBadge">4</span>
         <div class="gift">🎁</div>
       </div>
+      <div class="gift-hint" id="giftHint">keep tapping…</div>
       <div class="final-card" id="finalCard">
+        <div class="final-bouquet">🌹🌹🌹</div>
         <div class="emoji">💌</div>
         <h1 style="font-size:22px;">Lots Of Love<br>For You</h1>
         <p class="copy" id="finalMsg" style="margin:8px auto 0;">Once again, happy birthday, Meri Jaan. Here's to you — today and always.</p>
@@ -377,21 +620,32 @@
    Everything visible in the card pulls from here.
 ============================================================ */
 const CONFIG = {
-  recipientName: "Meri Jaan",
+  recipientName: "Aditi",
   senderSign: "— Always yours",
   letterBody: "Happy birthday to my truly special person, the love of my life. You are always there — my soulmate, my sweet soul — and I'm so grateful to have you in my life.",
+  letterBody2: "My love for you grows deeper every day. You mean the world to me. On your special day, I wish you all the happiness and joy that you deserve.",
+  // Messages scattered around the rose bouquet. pos can be
+  // tl / tr / ml / mr / bl / br. Set highlight:true to make one pop
+  // in the rose colour instead of plain ink.
   roseMessages: [
-    { side:'right', text:"Happy Birthday, Meri Jaan ❤️" },
-    { side:'left',  text:"My heart, always." },
-    { side:'right', text:"Forever yours 💍" },
-    { side:'left',  text:"I'd choose you again." },
+    { pos:'tl', text:"Forever yours 💍" },
+    { pos:'tr', text:"My one and only" },
+    { pos:'ml', text:"My heart, always" },
+    { pos:'mr', text:"Happy Birthday, Aditi ❤️ 💖", highlight:true },
+    { pos:'bl', text:"I'd choose you again" },
+    { pos:'br', text:"My soul's home 💕" },
   ],
-  finalMessage: "Once again, happy birthday, Meri Jaan. Here's to you — today and always."
+  // Words revealed one at a time as each balloon is popped.
+  balloonWords: [ "You 💕", "are my", "favourite", "person" ],
+  finalMessage: "Once again, happy birthday, Aditi. Here's to you — today and always.",
+  // Photos that burst out of the envelope. Put an image URL or a
+  // base64 data:image/... string in each slot. Leave "" to show a
+  // placeholder heart card instead of a real photo.
+  photos: [ "", "", "", "", "" ]
 };
 
 document.getElementById('coverName').textContent = CONFIG.recipientName;
 document.getElementById('letterName').textContent = CONFIG.recipientName;
-document.getElementById('letterBody').textContent = CONFIG.letterBody;
 document.getElementById('letterSign').textContent = CONFIG.senderSign;
 document.getElementById('finalMsg').textContent = CONFIG.finalMessage;
 
@@ -411,9 +665,10 @@ for(let i=0;i<14;i++){
 }
 
 /* ---------- navigation ---------- */
-const order = ['s1','s2','s3','s4','s5','s6'];
+const order = ['s1','s2','s3','s4','s5','s6','s7'];
 let idx = 0;
 const progressHost = document.getElementById('progress');
+const flash = document.getElementById('flash');
 order.forEach(()=>{
   const dot = document.createElement('i');
   progressHost.appendChild(dot);
@@ -429,6 +684,11 @@ function goTo(i){
   idx = i;
   document.getElementById(order[idx]).classList.add('active');
   renderProgress();
+  // a soft burst of light on every transition, like stepping through
+  // into the next moment
+  flash.classList.remove('pulse');
+  void flash.offsetWidth; // restart the animation
+  flash.classList.add('pulse');
 }
 function next(){ if(idx < order.length-1) goTo(idx+1); }
 renderProgress();
@@ -552,44 +812,322 @@ async function tryMic(){
 }
 tryMic();
 
-/* ---------- 4: letter ---------- */
+/* ---------- 4: letter (envelope -> photos rise away -> letter types out -> test of love -> continue) ---------- */
 const envelope = document.getElementById('envelope');
 const letterCard = document.getElementById('letterCard');
+const photoFly = document.getElementById('photoFly');
+const letterBodyEl = document.getElementById('letterBody');
+const letterBody2El = document.getElementById('letterBody2');
+const letterSignEl = document.getElementById('letterSign');
+const loveMeter = document.getElementById('loveMeter');
+const loveMeterFill = document.getElementById('loveMeterFill');
+const loveMeterLabel = document.getElementById('loveMeterLabel');
+const letterNextBtn = document.getElementById('letterNext');
+let envelopeOpened = false;
+
+function buildPolaroids(){
+  photoFly.innerHTML = '';
+  CONFIG.photos.forEach(src=>{
+    const card = document.createElement('div');
+    card.className = 'polaroid';
+    card.style.transition = ''; // reset to default CSS transition
+    card.style.opacity = '';
+    if(src){
+      const img = document.createElement('img');
+      img.src = src;
+      card.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'ph-placeholder';
+      ph.textContent = '📷';
+      card.appendChild(ph);
+    }
+    photoFly.appendChild(card);
+  });
+}
+buildPolaroids();
+
+// Photos pop out of the envelope, hover for a beat, then rise
+// upward one by one and dissolve away — so nothing is left sitting
+// on top of the letter underneath.
+function burstPhotos(){
+  const cards = [...photoFly.children];
+  const n = cards.length || 1;
+  cards.forEach((card, i)=>{
+    const angle = (Math.PI*2 * i/n) + (Math.random()*0.5 - 0.25);
+    const dist = 56 + Math.random()*36;
+    const x = Math.cos(angle) * dist;
+    const y = Math.sin(angle) * dist * 0.55 - 8;
+    const rot = Math.random()*40 - 20;
+
+    card.style.transitionDelay = (i*90) + 'ms';
+    requestAnimationFrame(()=>{
+      card.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(1) rotate(${rot}deg)`;
+      card.classList.add('fly');
+    });
+
+    // rise + fade, staggered one by one
+    setTimeout(()=>{
+      card.style.transitionDelay = '0ms';
+      card.style.transition = 'transform 1.3s cubic-bezier(.22,.61,.36,1), opacity 1.1s ease .15s';
+      card.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y - 190}px)) scale(.8) rotate(${rot*0.5}deg)`;
+      card.style.opacity = '0';
+    }, 700 + i*160);
+  });
+}
+
+// Reveals a paragraph one word at a time, like it's being written
+// in front of you, then calls onDone once the last word lands.
+function typeWords(el, text, wordDelay, onDone){
+  const words = text.split(' ');
+  el.textContent = '';
+  el.classList.add('typing');
+  const scrollParent = el.closest('.letter-card');
+  let i = 0;
+  (function step(){
+    if(i < words.length){
+      el.textContent += (i === 0 ? '' : ' ') + words[i];
+      i++;
+      // keep the newest line in view by scrolling the letter
+      // upward as it's written, like a page quietly rolling by
+      if(scrollParent) scrollParent.scrollTop = scrollParent.scrollHeight;
+      setTimeout(step, wordDelay);
+    } else {
+      el.classList.remove('typing');
+      if(onDone) onDone();
+    }
+  })();
+}
+
+function startLoveMeter(){
+  loveMeter.classList.add('show');
+  requestAnimationFrame(()=>{ loveMeterFill.style.width = '100%'; });
+  const dur = 2200;
+  const start = performance.now();
+  (function tick(now){
+    const pct = Math.min(100, Math.round((now - start) / dur * 100));
+    loveMeterLabel.textContent = pct < 100 ? `testing love… ${pct}%` : 'true love confirmed 💕';
+    if(pct < 100){
+      requestAnimationFrame(tick);
+    } else {
+      setTimeout(()=>{
+        letterNextBtn.style.opacity = 1;
+        letterNextBtn.style.pointerEvents = 'auto';
+      }, 250);
+    }
+  })(start);
+}
+
 envelope.addEventListener('click', ()=>{
+  if(envelopeOpened) return;
+  envelopeOpened = true;
   envelope.classList.add('open');
-  setTimeout(()=>{ letterCard.classList.add('show'); }, 350);
+  setTimeout(burstPhotos, 300);
+  // give every photo time to rise and fully dissolve before the
+  // letter appears underneath, so nothing overlaps
+  setTimeout(()=>{
+    letterCard.classList.add('show');
+    setTimeout(()=>{
+      typeWords(letterBodyEl, CONFIG.letterBody, 90, ()=>{
+        setTimeout(()=>{
+          typeWords(letterBody2El, CONFIG.letterBody2, 90, ()=>{
+            letterSignEl.classList.add('show');
+            letterCard.scrollTop = letterCard.scrollHeight;
+            setTimeout(startLoveMeter, 500);
+          });
+        }, 350);
+      });
+    }, 400);
+  }, 2200);
 });
 
-/* ---------- 5: rose chat ---------- */
-const chatWrap = document.getElementById('chatWrap');
+// This screen only ever advances when the person taps Continue —
+// never automatically, no matter how the animations resolve.
+letterNextBtn.addEventListener('click', next);
+
+/* ---------- 5: rose bouquet (deep-dive grow-in) ---------- */
+const bouquetStage = document.getElementById('bouquetStage');
+const bubbleScatter = document.getElementById('bubbleScatter');
+const bouquetArt = document.getElementById('bouquetArt');
 const chatNextBtn = document.getElementById('chatNext');
-let chatShown = false;
-function playChat(){
-  if(chatShown) return;
-  chatShown = true;
+let bouquetShown = false;
+
+function buildBubbles(){
+  bubbleScatter.innerHTML = '';
+  CONFIG.roseMessages.forEach(m=>{
+    const b = document.createElement('div');
+    b.className = 'scatter-bubble pos-' + m.pos + (m.highlight ? ' highlight' : '');
+    b.textContent = m.text;
+    bubbleScatter.appendChild(b);
+  });
+}
+buildBubbles();
+
+function spawnConvergingPetals(){
+  const w = bouquetStage.clientWidth, h = bouquetStage.clientHeight;
+  const cx = w/2, cy = h*0.52;
+  const chars = ['🌸','❤️','✨'];
+  for(let i=0;i<12;i++){
+    const p = document.createElement('div');
+    p.className = 'converge-petal';
+    p.textContent = chars[i % chars.length];
+    const angle = Math.random()*Math.PI*2;
+    const dist = 110 + Math.random()*70;
+    const startX = cx + Math.cos(angle)*dist;
+    const startY = cy + Math.sin(angle)*dist;
+    p.style.left = startX+'px';
+    p.style.top = startY+'px';
+    bouquetStage.appendChild(p);
+    requestAnimationFrame(()=>{
+      p.style.transform = `translate(${cx-startX}px, ${cy-startY}px) scale(.3) rotate(220deg)`;
+      p.style.opacity = 0;
+    });
+    setTimeout(()=>p.remove(), 950);
+  }
+}
+
+function growBouquet(){
+  if(bouquetShown) return;
+  bouquetShown = true;
+  // petals gather in first, like the bouquet is forming out of thin air
+  spawnConvergingPetals();
+  setTimeout(()=>{
+    // paper cone builds up in layers, back to front, for a fuller 3D wrap
+    bouquetArt.querySelector('.bouquet-paper-back.two').classList.add('show');
+    setTimeout(()=>bouquetArt.querySelector('.bouquet-paper-back:not(.two)').classList.add('show'), 90);
+    setTimeout(()=>bouquetArt.querySelector('.bouquet-paper').classList.add('show'), 180);
+    bouquetArt.querySelectorAll('.leaf-emoji').forEach((el, i)=>{
+      setTimeout(()=>el.classList.add('show'), 320 + i*70);
+    });
+    bouquetArt.querySelectorAll('.rose-emoji').forEach((el, i)=>{
+      setTimeout(()=>el.classList.add('show'), 500 + i*90);
+    });
+    setTimeout(()=>bouquetArt.querySelector('.bouquet-twine').classList.add('show'), 1050);
+    setTimeout(()=>bouquetArt.querySelector('.bouquet-ribbon').classList.add('show'), 1200);
+  }, 550);
+  // messages pop in around it
   CONFIG.roseMessages.forEach((m, i)=>{
     setTimeout(()=>{
-      const b = document.createElement('div');
-      b.className = 'bubble ' + (m.side==='right' ? 'right':'left');
-      b.textContent = m.text;
-      chatWrap.appendChild(b);
+      bubbleScatter.children[i].classList.add('show');
       if(i === CONFIG.roseMessages.length-1){
         setTimeout(()=>{
           chatNextBtn.style.opacity = 1;
           chatNextBtn.style.pointerEvents = 'auto';
         }, 500);
       }
-    }, i*650);
+    }, 1100 + i*260);
   });
 }
 chatNextBtn.addEventListener('click', next);
 
-/* ---------- 6: gift ---------- */
+/* ---------- 6: balloon pop ---------- */
+const balloonStage = document.getElementById('balloonStage');
+const balloonCounter = document.getElementById('balloonCounter');
+const balloonNextBtn = document.getElementById('balloonNext');
+const balloonPalettes = [
+  { light:'#FBD3DE', dark:'#E8879C' },
+  { light:'#C9EFDD', dark:'#7BC9A0' },
+  { light:'#DCD3F0', dark:'#A78FD1' },
+  { light:'#F7E3B0', dark:'#D8AE5D' },
+];
+const balloonPositions = [
+  { top:'2%',  left:'50%' },
+  { top:'12%', left:'6%'  },
+  { top:'54%', left:'4%'  },
+  { top:'48%', left:'54%' },
+];
+let poppedCount = 0;
+
+function buildBalloons(){
+  balloonStage.innerHTML = '';
+  poppedCount = 0;
+  balloonCounter.textContent = '0/4 popped';
+  CONFIG.balloonWords.forEach((word, i)=>{
+    const pal = balloonPalettes[i % balloonPalettes.length];
+    const pos = balloonPositions[i % balloonPositions.length];
+    const wrap = document.createElement('div');
+    wrap.className = 'balloon';
+    wrap.style.top = pos.top; wrap.style.left = pos.left;
+    wrap.style.setProperty('--bln-light', pal.light);
+    wrap.style.setProperty('--bln-dark', pal.dark);
+    wrap.style.animationDelay = (i*0.3)+'s';
+    wrap.innerHTML = '<div class="body"></div><div class="knot"></div><div class="string"></div>';
+
+    const wordEl = document.createElement('div');
+    wordEl.className = 'balloon-word';
+    wordEl.style.top = pos.top; wordEl.style.left = pos.left;
+    wordEl.textContent = word;
+
+    wrap.addEventListener('click', ()=>popBalloon(wrap, wordEl));
+    balloonStage.appendChild(wrap);
+    balloonStage.appendChild(wordEl);
+  });
+}
+buildBalloons();
+
+function burstConfettiAt(el){
+  const rect = el.getBoundingClientRect();
+  const colors = ['#7A2333','#BE9A5C','#F0C6C4','#A6465A'];
+  for(let i=0;i<14;i++){
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = (rect.left + rect.width/2)+'px';
+    c.style.top = (rect.top + rect.height/2)+'px';
+    c.style.background = colors[i % colors.length];
+    c.style.borderRadius = Math.random()>0.5 ? '50%' : '2px';
+    const ang = Math.random()*Math.PI*2, dist = 40 + Math.random()*70;
+    c.style.setProperty('--dx', (Math.cos(ang)*dist)+'px');
+    c.style.setProperty('--dy', (Math.sin(ang)*dist - 20)+'px');
+    c.style.animation = `confettiBurst ${.7+Math.random()*.5}s ease-out forwards`;
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 1300);
+  }
+}
+
+function popBalloon(wrap, wordEl){
+  if(wrap.classList.contains('popped')) return;
+  wrap.classList.add('popped');
+  wordEl.classList.add('show');
+  burstConfettiAt(wrap);
+  poppedCount++;
+  balloonCounter.textContent = poppedCount + '/' + CONFIG.balloonWords.length + ' popped';
+  // only shows Continue once every balloon has been popped by the user
+  if(poppedCount === CONFIG.balloonWords.length){
+    setTimeout(()=>{
+      balloonNextBtn.style.opacity = 1;
+      balloonNextBtn.style.pointerEvents = 'auto';
+    }, 500);
+  }
+}
+balloonNextBtn.addEventListener('click', next);
+
+/* ---------- 7: gift ---------- */
 const giftWrap = document.getElementById('giftWrap');
+const giftBadge = document.getElementById('giftBadge');
+const giftHint = document.getElementById('giftHint');
 const finalCard = document.getElementById('finalCard');
+const GIFT_TAPS_NEEDED = 4;
+let giftTaps = 0;
+
 giftWrap.addEventListener('click', ()=>{
   if(giftWrap.classList.contains('opened')) return;
+  giftTaps++;
+
+  if(giftTaps < GIFT_TAPS_NEEDED){
+    const remaining = GIFT_TAPS_NEEDED - giftTaps;
+    const g = giftWrap.querySelector('.gift');
+    g.style.animation = 'none';
+    void g.offsetWidth; // restart the shake animation each tap
+    g.style.animation = 'giftShake .4s ease';
+    giftBadge.textContent = remaining;
+    giftHint.textContent = remaining === 1 ? 'one more tap…' : remaining + ' more taps…';
+    burstConfettiAt(giftWrap);
+    return;
+  }
+
   giftWrap.classList.add('opened');
+  giftHint.textContent = '';
+  burstConfettiAt(giftWrap);
   launchConfetti();
   setTimeout(()=>{ finalCard.classList.add('show'); }, 300);
 });
@@ -600,9 +1138,23 @@ document.getElementById('replayBtn').addEventListener('click', ()=>{
   sealWrap.classList.remove('cracked');
   noBtn.classList.remove('roaming'); noBtn.style.left=''; noBtn.style.top=''; noBtn.textContent = 'Not yet'; dodges = 0;
   flame.classList.remove('out'); candleOut = false; micStatus.textContent = "🎤 blow into the mic — or tap the candle"; tryMic();
-  envelope.classList.remove('open'); letterCard.classList.remove('show');
-  chatWrap.innerHTML=''; chatShown=false; chatNextBtn.style.opacity=0; chatNextBtn.style.pointerEvents='none';
+  envelopeOpened = false;
+  envelope.classList.remove('open'); letterCard.classList.remove('show'); letterCard.scrollTop = 0;
+  buildPolaroids();
+  letterBodyEl.textContent = ''; letterBodyEl.classList.remove('typing');
+  letterBody2El.textContent = ''; letterBody2El.classList.remove('typing');
+  letterSignEl.classList.remove('show');
+  loveMeter.classList.remove('show'); loveMeterFill.style.width='0%'; loveMeterLabel.textContent='testing love…';
+  letterNextBtn.style.opacity=0; letterNextBtn.style.pointerEvents='none';
+  bouquetShown = false;
+  buildBubbles();
+  bouquetArt.querySelectorAll('.rose-emoji, .leaf-emoji, .bouquet-paper, .bouquet-paper-back, .bouquet-ribbon, .bouquet-twine').forEach(el=>el.classList.remove('show'));
+  chatNextBtn.style.opacity=0; chatNextBtn.style.pointerEvents='none';
+  buildBalloons();
+  balloonNextBtn.style.opacity=0; balloonNextBtn.style.pointerEvents='none';
   giftWrap.classList.remove('opened'); finalCard.classList.remove('show');
+  giftTaps = 0; giftBadge.textContent = GIFT_TAPS_NEEDED; giftHint.textContent = 'keep tapping…';
+  giftWrap.querySelector('.gift').style.animation = '';
   renderProgress();
 });
 
@@ -621,12 +1173,15 @@ function launchConfetti(){
   }
 }
 const styleSheet = document.createElement('style');
-styleSheet.textContent = `@keyframes confettiFall{ to{ transform:translateY(105vh) rotate(400deg); opacity:.9; } }`;
+styleSheet.textContent = `
+  @keyframes confettiFall{ to{ transform:translateY(105vh) rotate(400deg); opacity:.9; } }
+  @keyframes confettiBurst{ to{ transform:translate(var(--dx),var(--dy)) rotate(300deg); opacity:0; } }
+`;
 document.head.appendChild(styleSheet);
 
-/* trigger rose chat when its screen becomes active */
+/* trigger the bouquet grow-in when its screen becomes active */
 const s5 = document.getElementById('s5');
-new MutationObserver(()=>{ if(s5.classList.contains('active')) playChat(); })
+new MutationObserver(()=>{ if(s5.classList.contains('active')) growBouquet(); })
   .observe(s5, { attributes:true, attributeFilter:['class'] });
 </script>
 </body>
